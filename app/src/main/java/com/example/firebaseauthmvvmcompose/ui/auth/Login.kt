@@ -1,5 +1,6 @@
 package com.example.firebaseauthmvvmcompose.ui.auth
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,10 +9,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.TextField
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -24,6 +27,8 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.firebaseauthmvvmcompose.R
+import com.example.firebaseauthmvvmcompose.data.Resource
+import com.example.firebaseauthmvvmcompose.navaigation.ROUTE_HOME
 import com.example.firebaseauthmvvmcompose.navaigation.ROUTE_SIGNUP
 import com.example.firebaseauthmvvmcompose.ui.theme.FirebaseAuthMvvmComposeTheme
 import com.example.firebaseauthmvvmcompose.ui.theme.spacing
@@ -31,16 +36,19 @@ import com.example.firebaseauthmvvmcompose.ui.theme.spacing
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
+    viewModel: AuthViewModel?,
     navController: NavController
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
+    val loginFlow = viewModel?.loginFlow?.collectAsState()
+
     ConstraintLayout(
         modifier = Modifier.fillMaxSize()
     ) {
         val spacing = MaterialTheme.spacing
-        val (refHeader, refEmail, refPassword, refButtonLogin, refTextSignup) = createRefs()
+        val (refHeader, refEmail, refPassword, refButtonLogin, refTextSignup, refLoading) = createRefs()
 
         Box(modifier = Modifier
             .constrainAs(refHeader) {
@@ -90,7 +98,7 @@ fun LoginScreen(
         )
 
         Button(onClick = {
-
+            viewModel?.login(email, password)
         }, modifier = Modifier.constrainAs(refButtonLogin) {
             top.linkTo(refPassword.bottom, spacing.large)
             start.linkTo(parent.start, spacing.extraLarge)
@@ -105,29 +113,54 @@ fun LoginScreen(
         }
 
         Text(
-            modifier = Modifier.constrainAs(refTextSignup) {
-                top.linkTo(refButtonLogin.bottom, spacing.medium)
-                start.linkTo(parent.start, spacing.extraLarge)
-                end.linkTo(parent.end, spacing.extraLarge)
-            }.clickable {
-                navController.navigate(ROUTE_SIGNUP){
-                    popUpTo(ROUTE_SIGNUP){ inclusive = true}
+            modifier = Modifier
+                .constrainAs(refTextSignup) {
+                    top.linkTo(refButtonLogin.bottom, spacing.medium)
+                    start.linkTo(parent.start, spacing.extraLarge)
+                    end.linkTo(parent.end, spacing.extraLarge)
                 }
-            },
+                .clickable {
+                    navController.navigate(ROUTE_SIGNUP) {
+                        popUpTo(ROUTE_SIGNUP) { inclusive = true }
+                    }
+                },
             text = stringResource(id = R.string.dont_have_account),
             style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
         )
 
+        /*loading part*/
+        loginFlow?.value?.let {
+            when (it) {
+                is Resource.Failure -> {
+                    val context = LocalContext.current
+                    Toast.makeText(context, it.exception.message, Toast.LENGTH_SHORT).show()
+                }
+                Resource.Loading -> {
+                    CircularProgressIndicator(modifier = Modifier.constrainAs(refLoading) {
+                        top.linkTo(parent.top)
+                        bottom.linkTo(parent.bottom)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                    })
+                }
+                is Resource.Success -> {
+                    LaunchedEffect(Unit) {
+                        navController.navigate(ROUTE_HOME) {
+                            popUpTo(ROUTE_HOME) { inclusive = true }
+                        }
+                    }
+                }
+            }
+        }
     }
-
 }
 
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
     FirebaseAuthMvvmComposeTheme {
-        LoginScreen(navController = rememberNavController())
+        LoginScreen(null, navController = rememberNavController())
     }
 }

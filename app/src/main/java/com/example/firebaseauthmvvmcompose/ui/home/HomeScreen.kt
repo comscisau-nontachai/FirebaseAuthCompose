@@ -16,11 +16,14 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.firebaseauthmvvmcompose.R
+import com.example.firebaseauthmvvmcompose.navaigation.ROUTE_HOME
+import com.example.firebaseauthmvvmcompose.navaigation.ROUTE_LOGIN
+import com.example.firebaseauthmvvmcompose.ui.auth.AuthViewModel
 import com.example.firebaseauthmvvmcompose.ui.theme.FirebaseAuthMvvmComposeTheme
 import com.example.firebaseauthmvvmcompose.ui.theme.spacing
 
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(viewModel: AuthViewModel?, navController: NavController) {
     var spacing = MaterialTheme.spacing
     Column(
         modifier = Modifier
@@ -38,7 +41,7 @@ fun HomeScreen(navController: NavController) {
         )
 
         Text(
-            text = stringResource(id = R.string.name),
+            text = viewModel?.currentUser?.displayName ?: "",
             style = androidx.compose.material3.MaterialTheme.typography.displaySmall,
             color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
         )
@@ -67,7 +70,7 @@ fun HomeScreen(navController: NavController) {
                     color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Dev Test",
+                    text = viewModel?.currentUser?.displayName ?: "",
                     style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(0.7f),
                     color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
@@ -87,7 +90,7 @@ fun HomeScreen(navController: NavController) {
                     color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "dev@gmail.com",
+                    text = viewModel?.currentUser?.email ?: "",
                     style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(0.7f),
                     color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
@@ -97,12 +100,20 @@ fun HomeScreen(navController: NavController) {
 
         /*button*/
         Button(
-            onClick = { /*TODO*/ },
+            onClick = {
+                viewModel?.logout()
+                navController.navigate(ROUTE_LOGIN) {
+                    popUpTo(ROUTE_HOME) { inclusive = true }
+                }
+            },
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
                 .padding(top = spacing.extraLarge)
         ) {
-            Text(text = stringResource(id = R.string.logout), color = colorResource(id = R.color.white))
+            Text(
+                text = stringResource(id = R.string.logout),
+                color = colorResource(id = R.color.white)
+            )
         }
     }
 }
@@ -111,6 +122,6 @@ fun HomeScreen(navController: NavController) {
 @Composable
 fun HomePreview() {
     FirebaseAuthMvvmComposeTheme() {
-        HomeScreen(navController = rememberNavController())
+        HomeScreen(null, navController = rememberNavController())
     }
 }
